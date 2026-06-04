@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-// TODO:
-// Добавить запись в файл
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: html-loader <url1> <url2>\nExample: html-loader google.com")
