@@ -25,15 +25,14 @@ func main() {
 
 	switch op {
 	case "+":
-		fmt.Println(add(a, b))
+		fmt.Println("Result:", add(a, b))
 	case "-":
-		fmt.Println(substract(a, b))
+		fmt.Println("Result:", substract(a, b))
 	case "*":
-		fmt.Println(multiply(a, b))
+		fmt.Println("Result:", multiply(a, b))
 	case "/":
-		fmt.Println(divide(a, b))
+		fmt.Println("Result:", divide(a, b))
 	}
-
 }
 
 func add(a, b float64) float64 {
