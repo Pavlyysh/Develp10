@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/fatih/color"
 )
@@ -67,7 +68,11 @@ func main() {
 			fmt.Println(err)
 		}
 	case "list":
-		err := list()
+		listCmd := flag.NewFlagSet("list", flag.ExitOnError)
+		filter := listCmd.String("filter", "all", "filter tasks: all, pending, done, overdue")
+		listCmd.Parse(os.Args[2:])
+
+		err := list(*filter)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -127,24 +132,81 @@ func add(task *Task) error {
 	return saveTasks(tasks)
 }
 
-func list() error {
+func list(filter string) error {
 	tasks, err := loadTasks()
 	if err != nil {
 		return err
 	}
 
-	for _, task := range tasks {
-		switch task.Status {
-		case "done":
-			color.Green("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
-		case "pending":
-			color.Blue("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
-		default:
-			color.White("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
-		}
-		fmt.Println("------------------")
+	filtered := filterTasks(tasks, filter)
+
+	if len(filtered) == 0 {
+		fmt.Println("No tasks found")
+		return nil
 	}
+
+	for _, task := range filtered {
+		printTask(task)
+	}
+
 	return nil
+}
+func filterTasks(tasks []Task, filter string) []Task {
+	switch filter {
+	case "pending":
+		return filterByStatus(tasks, "pending")
+	case "done":
+		return filterByStatus(tasks, "done")
+	case "overdue":
+		return filterOverdue(tasks)
+	case "all", "":
+		return tasks
+	default:
+		fmt.Printf("Unknown filter: %s, showing all tasks\n", filter)
+		return tasks
+	}
+}
+
+func filterByStatus(tasks []Task, status string) []Task {
+	var result []Task
+	for _, task := range tasks {
+		if task.Status == status {
+			result = append(result, task)
+		}
+	}
+	return result
+}
+
+func filterOverdue(tasks []Task) []Task {
+	var result []Task
+	today := time.Now().Format("2006-01-02")
+
+	for _, task := range tasks {
+		if task.Status != "done" && task.Due != "" && task.Due < today {
+			result = append(result, task)
+		}
+	}
+	return result
+}
+
+func printTask(task Task) {
+	switch task.Status {
+	case "done":
+		color.Green("[✓] %s", task.Title)
+	case "pending":
+		color.Yellow("[ ] %s", task.Title)
+	}
+
+	if task.Description != "" {
+		fmt.Printf("    %s\n", task.Description)
+	}
+	if task.Due != "" {
+		fmt.Printf("    Due: %s\n", task.Due)
+	}
+	if task.Priority != "" {
+		fmt.Printf("    Priority: %s\n", task.Priority)
+	}
+	fmt.Println("------------------")
 }
 
 func done(inputTask *Task) error {
