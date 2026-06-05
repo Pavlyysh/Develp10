@@ -10,7 +10,8 @@ import (
 )
 
 var (
-	ErrEmptyTitle = errors.New("title cannot be empty")
+	ErrEmptyTitle   = errors.New("title cannot be empty")
+	ErrTaskNotFound = errors.New("task not found")
 )
 
 type Task struct {
@@ -67,7 +68,30 @@ func main() {
 			fmt.Println(err)
 		}
 	case "rm":
+		rmCmd := flag.NewFlagSet("rm", flag.ExitOnError)
+		title := rmCmd.String("t", "", "title")
+		rmCmd.Parse(os.Args[2:])
+
+		task := &Task{Title: *title}
+		err := rm(task)
+		if err != nil {
+			fmt.Println(err)
+		}
 	case "done":
+		doneCmd := flag.NewFlagSet("done", flag.ExitOnError)
+		title := doneCmd.String("t", "", "title")
+		doneCmd.Parse(os.Args[2:])
+
+		task := &Task{Title: *title}
+
+		err := done(task)
+		if err != nil {
+			fmt.Println(err)
+		}
+	case "clear":
+		if err := clear(); err != nil {
+			fmt.Println(err)
+		}
 	default:
 	}
 
@@ -107,11 +131,57 @@ func list() error {
 	return nil
 }
 
-func done(title string) {}
+func done(inputTask *Task) error {
+	if inputTask.Title == "" {
+		return ErrEmptyTitle
+	}
 
-func rm(title string) {}
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
 
-func clear() {}
+	for i := range tasks {
+		if tasks[i].Title == inputTask.Title {
+			tasks[i].Status = "done"
+			if err := saveTasks(tasks); err != nil {
+				return err
+			}
+			return nil
+		}
+
+	}
+
+	return ErrTaskNotFound
+}
+
+func rm(inputTask *Task) error {
+	if inputTask.Title == "" {
+		return ErrEmptyTitle
+	}
+
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	for i := range tasks {
+		if tasks[i].Title == inputTask.Title {
+			tasks = append(tasks[:i], tasks[i+1:]...)
+			if err := saveTasks(tasks); err != nil {
+				return err
+			}
+			return nil
+		}
+	}
+	return ErrTaskNotFound
+}
+
+func clear() error {
+	tasks := []Task{}
+
+	return saveTasks(tasks)
+}
 
 func getStoragePath() (string, error) {
 	home, err := os.UserHomeDir()
