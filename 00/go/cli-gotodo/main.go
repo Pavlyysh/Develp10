@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,6 +43,24 @@ func main() {
 
 	switch os.Args[1] {
 	case "add":
+		addCmd := flag.NewFlagSet("add", flag.ExitOnError)
+		title := addCmd.String("t", "", "title")
+		desc := addCmd.String("d", "", "description")
+		priority := addCmd.String("priority", "medium", "priority, medium by default")
+		due := addCmd.String("due", "", "due date")
+		addCmd.Parse(os.Args[2:])
+
+		task := &Task{
+			Title:       *title,
+			Description: *desc,
+			Priority:    *priority,
+			Due:         *due,
+			Status:      "pending",
+		}
+		err := add(task)
+		if err != nil {
+			fmt.Println(err)
+		}
 	case "list":
 	case "rm":
 	case "done":
@@ -51,7 +70,24 @@ func main() {
 }
 
 func add(task *Task) error {
-	return nil
+	if task.Title == "" {
+		return ErrEmptyTitle
+	}
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	id := 1
+	if len(tasks) > 0 {
+		id = tasks[len(tasks)-1].ID + 1
+	}
+
+	task.ID = id
+
+	tasks = append(tasks, *task)
+
+	return saveTasks(tasks)
 }
 
 func list() error {
