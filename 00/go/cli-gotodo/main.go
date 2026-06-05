@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/fatih/color"
 )
 
 var (
@@ -49,8 +51,10 @@ func main() {
 		desc := addCmd.String("d", "", "description")
 		priority := addCmd.String("priority", "medium", "priority, medium by default")
 		due := addCmd.String("due", "", "due date")
-		addCmd.Parse(os.Args[2:])
-
+		err := addCmd.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Println(err)
+		}
 		task := &Task{
 			Title:       *title,
 			Description: *desc,
@@ -58,7 +62,7 @@ func main() {
 			Due:         *due,
 			Status:      "pending",
 		}
-		err := add(task)
+		err = add(task)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -70,21 +74,26 @@ func main() {
 	case "rm":
 		rmCmd := flag.NewFlagSet("rm", flag.ExitOnError)
 		title := rmCmd.String("t", "", "title")
-		rmCmd.Parse(os.Args[2:])
+		err := rmCmd.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		task := &Task{Title: *title}
-		err := rm(task)
+		err = rm(task)
 		if err != nil {
 			fmt.Println(err)
 		}
 	case "done":
 		doneCmd := flag.NewFlagSet("done", flag.ExitOnError)
 		title := doneCmd.String("t", "", "title")
-		doneCmd.Parse(os.Args[2:])
-
+		err := doneCmd.Parse(os.Args[2:])
+		if err != nil {
+			fmt.Println(err)
+		}
 		task := &Task{Title: *title}
 
-		err := done(task)
+		err = done(task)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -125,7 +134,14 @@ func list() error {
 	}
 
 	for _, task := range tasks {
-		fmt.Printf("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
+		switch task.Status {
+		case "done":
+			color.Green("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
+		case "pending":
+			color.Blue("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
+		default:
+			color.White("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
+		}
 		fmt.Println("------------------")
 	}
 	return nil
@@ -207,7 +223,11 @@ func loadTasks() ([]Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 
 	var tasks []Task
 
@@ -230,7 +250,11 @@ func saveTasks(tasks []Task) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Warning: failed to close file: %v\n", err)
+		}
+	}()
 
 	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "	")
