@@ -1,0 +1,119 @@
+package main
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+var (
+	ErrEmptyTitle = errors.New("title cannot be empty")
+)
+
+type Task struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Status      string `json:"status"`
+	Priority    string `json:"priority"`
+	Due         string `json:"due"`
+}
+
+// CLI-утилита gotodo — менеджер задач в терминале.
+
+// Критерии приёмки:
+
+// Команды: add, list, done, rm, clear.
+// Хранение в JSON-файле в ~/.gotodo/tasks.json.
+// Цветной вывод (через fatih/color или ANSI-коды).
+// Флаги: --priority, --due, --filter.
+// Свой репозиторий на GitHub с README, MIT-лицензией, минимум 5 осмысленных коммитов.
+// Установка через go install.
+// golangci-lint чист.
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: gotodo <option>")
+		fmt.Println("Example: gotodo add -t PetProject -d Make gotodo petProject")
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "add":
+	case "list":
+	case "rm":
+	case "done":
+	default:
+	}
+
+}
+
+func add(task *Task) error {
+	return nil
+}
+
+func list() error {
+	return nil
+}
+
+func done(title string) {}
+
+func rm(title string) {}
+
+func clear() {}
+
+func getStoragePath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	dir := filepath.Join(home, ".gotodo")
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return "", err
+	}
+
+	return filepath.Join(dir, "tasks.json"), nil
+}
+
+func loadTasks() ([]Task, error) {
+	path, err := getStoragePath()
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var tasks []Task
+
+	if info, _ := file.Stat(); info.Size() > 0 {
+		if err := json.NewDecoder(file).Decode(&tasks); err != nil {
+			return nil, err
+		}
+	}
+
+	return tasks, nil
+}
+
+func saveTasks(tasks []Task) error {
+	path, err := getStoragePath()
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "	")
+	return encoder.Encode(tasks)
+}
