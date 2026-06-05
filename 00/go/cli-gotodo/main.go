@@ -62,6 +62,10 @@ func main() {
 			fmt.Println(err)
 		}
 	case "list":
+		err := list()
+		if err != nil {
+			fmt.Println(err)
+		}
 	case "rm":
 	case "done":
 	default:
@@ -91,6 +95,15 @@ func add(task *Task) error {
 }
 
 func list() error {
+	tasks, err := loadTasks()
+	if err != nil {
+		return err
+	}
+
+	for _, task := range tasks {
+		fmt.Printf("Title: %s\nDescription: %s\nStatus: %s\n", task.Title, task.Description, task.Status)
+		fmt.Println("------------------")
+	}
 	return nil
 }
 
