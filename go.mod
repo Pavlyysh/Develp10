@@ -2,7 +2,6 @@ module github.com/Pavlyysh/Develp10
 
 go 1.25.1
 
-
 require github.com/fatih/color v1.19.0
 
 require (
